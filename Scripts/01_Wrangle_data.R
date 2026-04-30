@@ -23,12 +23,11 @@ detect_data_raw <- read.csv("./Data/M3_compiled_taxon_table_wide.csv") %>%
   mutate(run = gsub("c","",run)) %>% 
   mutate(Detected = ifelse(nReads>0, 1, 0)) %>% 
   filter(primer == "MV1") %>% 
-  filter(techRep < 4) %>% 
+  #filter(techRep < 4) %>% 
   filter(!BestTaxon %in% c("Moschus", "Equus caballus")) %>% 
   ungroup()
 
 #test raw data
-
 detect_data_raw %>% filter(Class == "Mammalia") %>% distinct(BestTaxon)
 detect_data_raw %>% distinct(NWFSCsampleID) %>% summarize(n())
 detect_data_raw %>% group_by(run) %>% distinct(run)
@@ -51,6 +50,7 @@ detect_data_1seq %>% filter(Class == "Mammalia") %>% distinct(BestTaxon)
 detect_data_1seq %>% group_by(NWFSCsampleID) %>% 
   summarize(nReps = n()/330) %>% arrange(desc(nReps))
 test <- detect_data_1seq %>% filter(NWFSCsampleID == "52193-555")
+
 ## Reduce dilutions ------------------------------------------------------------
 
 detect_data_1dil <- detect_data_1seq %>% 
@@ -64,11 +64,23 @@ detect_data_1dil <- detect_data_1seq %>%
   filter(dilution == min(dilution)) %>% 
   ungroup()
 
+detect_data_1dil <- detect_data_1seq %>% 
+  group_by(NWFSCsampleID, dilution) %>% 
+  mutate(nReps = max(techRep)) %>% 
+  ungroup() %>% 
+  group_by(NWFSCsampleID) %>% 
+  filter(nReps == max(nReps)) %>%
+  mutate(dilution = as.numeric(substr(dilution, 2, nchar(dilution)))) %>%
+  filter(dilution == min(dilution)) %>% 
+  select(-nReps) %>% 
+  ungroup()
+ #filter(nReps == 3)
+
 detect_data_1dil %>% distinct(NWFSCsampleID) %>% summarize(n())
 detect_data_1dil %>% filter(Class == "Mammalia") %>% 
   distinct(BestTaxon)
 detect_data_1dil %>% group_by(NWFSCsampleID) %>% 
-  summarize(nReps = n()/330) %>% arrange(desc(nReps))
+  summarize(nReps = n()/330) %>% arrange(nReps)
 detect_data_1dil %>% group_by(NWFSCsampleID) %>% 
   summarize(nReps = n()/330) %>% pull(nReps) %>% max()
 #should be 3
@@ -79,14 +91,20 @@ detect_data_meta <- detect_data_1dil %>%
   left_join(metadata, by = c("NWFSCsampleID" = "sampleID")) 
 
 detect_data_meta %>% group_by(station, depth) %>% 
-  distinct(techRep) %>% summarize(nReps = n())
+  distinct(techRep) %>% summarize(nReps = n()) %>% arrange(nReps)
 
 ## Remove duplicate samples and stations with fewer than 3 replicates ----------
 
 detect_data <- detect_data_meta %>% 
   group_by(station, depth) %>%
-  distinct(NWFSCsampleID) %>% 
-  summarise(n())
+  #should we include bioReps?
+  mutate(nReps = max(techRep)) %>% 
+  filter(nReps == 3) %>% 
+  ungroup()
+  
+
+detect_data %>% group_by(station) %>% n_groups() #177 station
+detect_data %>% group_by(depth, station) %>% n_groups() #527 station/depths
 
 ## Remove Delphinidae family
 detect_data <- detect_data_meta %>% 
