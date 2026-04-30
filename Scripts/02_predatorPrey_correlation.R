@@ -9,18 +9,18 @@ library(ANCOMBC)
 
 ### Get data -------------------------------------------------------------------
 
-seqtab <- read.csv("./data/AFSC_MV1/ASVtable.csv") %>% 
+seqtab <- read.csv("Data/AMBON/ASVtable.csv") %>% 
   separate(1, into = c("sample", "rep")) %>% 
   group_by(sample) %>% 
   summarize(across(c(ASV1:ASV880), ~ceiling(mean(.x, na.rm = TRUE)))) %>% 
   mutate(across(everything(), ~replace_na(., 0))) %>% 
   column_to_rownames("sample")
 
-taxa <- read.csv("./data/AFSC_MV1/taxonomy_20250609_collapsed.csv", row.names = 1) %>% 
+taxa <- read.csv("Data/AMBON/taxonomy_20250609_collapsed.csv", row.names = 1) %>% 
   select(kingdom,phylum,class,family,genus,species) %>% 
   as.matrix()
 
-samdf <- read.csv("./data/metadata/FAIRe_noaa-afsc-dbo1.csv", row.names = 1)
+samdf <- read.csv("Data/AMBON/FAIRe_noaa-afsc-dbo1.csv", row.names = 1)
 
 ### Make phyloseq object -------------------------------------------------------
 
@@ -93,7 +93,7 @@ plot_bar(ps.prop, x = "Erignathus.barbatus", fill = "family") +
   theme(legend.position = "none")
 
 
-### Differential expression ----------------------------------------------------
+### Community analysis of variance----------------------------------------------
 # List of target species
 target_species <-  gsub(" ", "\\.", detect_by_species$species)
   
@@ -131,11 +131,11 @@ mv1Preydiff <- ggplot(sig_results_all, aes(x = taxon, y = lfc, color = predator)
                   theme_minimal() +
                   theme(legend.position = "bottom")
 
-png("./data products/MV1_ANCOM_prey.png")
+png("Figures/MV1_ANCOM_prey.png")
 mv1Preydiff
 dev.off()
 
-### Boxplots of DE prey species ------------------------------------------------
+### Boxplots of potential prey species -----------------------------------------
 # convert detections to a table
 otu_de <- as(otu_table(ps.prop), "matrix")
 tax_table_de <- as.data.frame(tax_table(ps.prop))
@@ -156,7 +156,7 @@ mv1PreyBox <- ggplot(de_prey, aes(y = pReads, x = prey, fill = as.factor(detecte
                 theme_minimal() +
                 scale_x_discrete(guide = guide_axis(n.dodge = 2)) 
 
-png("./data products/MV1_prey_boxplot.png")
+png("Figures/MV1_prey_boxplot.png")
 mv1PreyBox
 dev.off()
 
