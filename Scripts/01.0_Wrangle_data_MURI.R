@@ -23,7 +23,7 @@ detect_data_raw <- read.csv("./Data/M3_compiled_taxon_table_wide.csv") %>%
   mutate(run = gsub("c","",run)) %>% 
   mutate(Detected = ifelse(nReads>0, 1, 0)) %>% 
   filter(primer == "MV1") %>% 
-  #filter(techRep < 4) %>% 
+  filter(techRep < 4) %>% 
   filter(!BestTaxon %in% c("Moschus", "Equus caballus")) %>% 
   ungroup()
 
@@ -74,7 +74,7 @@ detect_data_1dil <- detect_data_1seq %>%
   filter(dilution == min(dilution)) %>% 
   select(-nReps) %>% 
   ungroup()
- #filter(nReps == 3)
+#filter(nReps == 3)
 
 detect_data_1dil %>% distinct(NWFSCsampleID) %>% summarize(n())
 detect_data_1dil %>% filter(Class == "Mammalia") %>% 
@@ -101,14 +101,30 @@ detect_data <- detect_data_meta %>%
   mutate(nReps = max(techRep)) %>% 
   filter(nReps == 3) %>% 
   ungroup()
-  
+
 
 detect_data %>% group_by(station) %>% n_groups() #177 station
 detect_data %>% group_by(depth, station) %>% n_groups() #527 station/depths
 
-## Remove Delphinidae family
-detect_data <- detect_data_meta %>% 
+## Remove Delphinidae family ---------------------------------------------------
+detect_data <- detect_data %>% 
   filter(!(BestTaxon %in% c('Delphinidae')))
+
+## Pivot fish data to wide -----------------------------------------------------
+
+fish_wide <- detect_data %>%
+  filter(Class != "Mammalia") %>%
+  select(BestTaxon, SampleUID, Sample_name, run, primer, NWFSCsampleID, dilution,
+         techRep, seqRep, nReads) %>%
+  pivot_wider(names_from = BestTaxon, values_from = nReads, values_fill = 0)
+
+mammals <- detect_data %>%
+  filter(Class == "Mammalia") 
+
+detect_data_muri <- mammals %>% 
+  left_join(fish_wide, by = c("SampleUID", "Sample_name", "run", "primer", 
+                              "NWFSCsampleID", "dilution",
+                              "techRep", "seqRep"))
 
 ## count number of marine mammal detections by species -------------------------
 
@@ -116,4 +132,16 @@ detect_per_species <- detect_data %>%
   filter(Class == "Mammalia") %>% 
   group_by(BestTaxon) %>% 
   summarize(nDetect = sum(Detected))
+
+detect_per_species_station <- detect_data %>% 
+  filter(Class == "Mammalia") %>% 
+  group_by(BestTaxon,station) %>% 
+  summarize(nDetect = sum(Detected)) %>% 
+  mutate(stationDetect = case_when(nDetect > 0~1,TRUE~0)) %>% 
+  ungroup() %>% 
+  group_by(BestTaxon) %>% 
+  summarize(nstationDetect = sum(stationDetect))
+
+save(detect_data_muri, detect_per_species, 
+     file = "ProcessedData/detect_data_muri.Rdata")
 
