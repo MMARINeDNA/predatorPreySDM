@@ -123,7 +123,7 @@ for (sp in target_species) {
 sig_results_all <- bind_rows(sig_results_list) %>% 
   filter(!(grepl("Intercept", metric))) %>% 
   separate(metric, into = c("metric", NA)) %>% 
-  pivot_wider(names_from = metric, values_from = value) %>% 
+  pivot_wider(names_from = metric, values_from = value) %>%
   mutate(across(c(predator, taxon), ~ gsub("\\.", " ", .)))
 
 mv1Preydiff <- ggplot(sig_results_all, aes(x = taxon, y = lfc, color = predator)) +
