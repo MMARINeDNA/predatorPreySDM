@@ -102,12 +102,14 @@ sig_results_list <- list()
 for (sp in target_species) {
   
   #Run ANCOMBC
-  out <- ancombc2(data = ps.fish.sp, tax_level = "species", fix_formula = sp,
-    p_adj_method = "fdr", struc_zero = FALSE, neg_lb = FALSE)
+  out <- ancombc2(data = ps.fish.sp, tax_level = "species", fix_formula = sp, 
+                  p_adj_method = "fdr", struc_zero = FALSE, neg_lb = FALSE, 
+                  pseudo = 0)
   
   # Extract results
   res <- out$res
   colnames(res)[13] <- "diff"
+  colnames(res)[17] <- "robust"
   
   # Filter significant results
   sig_res <- res[which(res$diff == TRUE),]
@@ -115,18 +117,19 @@ for (sp in target_species) {
   # pivot
   sig_results_list[[sp]] <- sig_res %>% 
     pivot_longer(-taxon, names_to = "metric", values_to = "value") %>% 
-    mutate(predator = sp)
+    mutate(predator = sp) 
   
 }
 
 # Combine all results into one data frame
-sig_results_all <- bind_rows(sig_results_list) %>% 
+sig_results_all <- dplyr::bind_rows(sig_results_list) %>% 
   filter(!(grepl("Intercept", metric))) %>% 
   separate(metric, into = c("metric", NA)) %>% 
-  pivot_wider(names_from = metric, values_from = value) %>% 
-  mutate(across(c(predator, taxon), ~ gsub("\\.", " ", .)))
+  pivot_wider(id_cols = c(taxon, predator), names_from = metric, values_from = value) %>% 
+  mutate(across(c(predator, taxon), ~ gsub("\\.", " ", .))) %>%
+  left_join(ps.fish.sp@tax_table %>% as.data.frame() %>% rownames_to_column("ASV") %>% select(ASV,species), by = c("taxon" = "ASV"))
 
-mv1Preydiff <- ggplot(sig_results_all, aes(x = taxon, y = lfc, color = predator)) +
+mv1Preydiff <- ggplot(sig_results_all, aes(x = species, y = lfc, color = predator)) +
                   geom_jitter(size = 6, alpha = 0.5, height = 0, width = 0.05) +
                   theme_minimal() +
                   theme(legend.position = "bottom")
@@ -143,12 +146,12 @@ colnames(otu_de) <- tax_table_de$species
 
 de_prey <- as.data.frame(otu_de) %>% 
   rownames_to_column("sample") %>% 
-  select(sample, unique(sig_results_all$taxon)) %>% 
+  select(sample, unique(sig_results_all$species)) %>% 
   left_join(mm_detect %>% rownames_to_column("sample"), by = "sample") %>% 
   pivot_longer(12:24, names_to = "predator", values_to = "detected") %>% 
   select(-total_sp) %>% 
   pivot_longer(2:11, names_to = "prey", values_to = "pReads") %>% 
-  semi_join(sig_results_all, by = c("prey" = "taxon", "predator" = "predator"))
+  semi_join(sig_results_all, by = c("prey" = "species", "predator" = "predator"))
 
 mv1PreyBox <- ggplot(de_prey, aes(y = pReads, x = prey, fill = as.factor(detected))) +
                 geom_boxplot(outliers = FALSE) +
