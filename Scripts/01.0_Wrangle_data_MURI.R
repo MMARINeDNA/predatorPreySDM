@@ -3,7 +3,6 @@
 #### Spring 2026
 #### AVC, from Van Cise et al. MURI zDistribution paper
 
-
 library(tidyverse)
 
 ## Get data --------------------------------------------------------------------
@@ -83,7 +82,7 @@ detect_data_1dil %>% group_by(NWFSCsampleID) %>%
   summarize(nReps = n()/330) %>% arrange(nReps)
 detect_data_1dil %>% group_by(NWFSCsampleID) %>% 
   summarize(nReps = n()/330) %>% pull(nReps) %>% max()
-#should be 3
+# should be 3
 
 ## Add metadata ----------------------------------------------------------------
 
@@ -109,6 +108,10 @@ detect_data %>% group_by(depth, station) %>% n_groups() #527 station/depths
 ## Remove Delphinidae family ---------------------------------------------------
 detect_data <- detect_data %>% 
   filter(!(BestTaxon %in% c('Delphinidae')))
+
+## Filter to only perfect match classes ----------------------------------------  
+detect_data <- detect_data %>%
+  filter(Class %in% c("Actinopteri", "Mammalia", "Chondrichthyes"))
 
 ## Pivot fish data to wide -----------------------------------------------------
 
