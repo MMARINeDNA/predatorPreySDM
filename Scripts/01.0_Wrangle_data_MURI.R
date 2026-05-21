@@ -4,6 +4,7 @@
 #### AVC, from Van Cise et al. MURI zDistribution paper
 
 library(tidyverse)
+library(sf)
 
 ## Get data --------------------------------------------------------------------
 
@@ -42,7 +43,7 @@ detect_data_1seq <- detect_data_raw %>%
   ungroup() %>% 
   mutate(seqRep = replace_na(seqRep, "sr1")) %>% 
   filter(!(totReads == 0 & seqRep %in% c("sr2", "sr3"))) %>% 
-  select(-totReads)
+  dplyr::select(-totReads)
 
 detect_data_1seq %>% distinct(NWFSCsampleID) %>% summarize(n())
 detect_data_1seq %>% filter(Class == "Mammalia") %>% distinct(BestTaxon)
@@ -59,7 +60,7 @@ detect_data_1dil <- detect_data_1seq %>%
   group_by(primer, NWFSCsampleID, techRep) %>% 
   filter(totReads == max(totReads)) %>% 
   mutate(dilution = as.numeric(substr(dilution, 2, nchar(dilution)))) %>% 
-  select(-totReads) %>% 
+  dplyr::select(-totReads) %>% 
   filter(dilution == min(dilution)) %>% 
   ungroup()
 
@@ -71,7 +72,7 @@ detect_data_1dil <- detect_data_1seq %>%
   filter(nReps == max(nReps)) %>%
   mutate(dilution = as.numeric(substr(dilution, 2, nchar(dilution)))) %>%
   filter(dilution == min(dilution)) %>% 
-  select(-nReps) %>% 
+  dplyr::select(-nReps) %>% 
   ungroup()
 #filter(nReps == 3)
 
@@ -117,7 +118,7 @@ detect_data <- detect_data %>%
 
 fish_wide <- detect_data %>%
   filter(Class != "Mammalia") %>%
-  select(BestTaxon, SampleUID, Sample_name, run, primer, NWFSCsampleID, dilution,
+  dplyr::select(BestTaxon, SampleUID, Sample_name, run, primer, NWFSCsampleID, dilution,
          techRep, seqRep, nReads) %>%
   pivot_wider(names_from = BestTaxon, values_from = nReads, values_fill = 0)
 
@@ -128,6 +129,14 @@ detect_data_muri <- mammals %>%
   left_join(fish_wide, by = c("SampleUID", "Sample_name", "run", "primer", 
                               "NWFSCsampleID", "dilution",
                               "techRep", "seqRep"))
+
+## Convert to sf, fix utm columns ----------------------------------------------
+
+detect_data_muri <- detect_data_muri %>% 
+  mutate(lat_deg = lat, lon_deg = lon) %>% 
+  st_as_sf(coords = c("lon", "lat"), crs = 4326) %>% 
+  st_transform(32610) %>% 
+  mutate(utm.lon = st_coordinates(.)[1], utm.lat = st_coordinates(.)[2])
 
 ## count number of marine mammal detections by species -------------------------
 
