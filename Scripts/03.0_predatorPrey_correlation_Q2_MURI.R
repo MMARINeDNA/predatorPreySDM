@@ -6,13 +6,15 @@ library(phyloseq)
 library(PNWColors)
 library(microViz)
 library(ANCOMBC)
+library(sf)
 
 ### Get data -------------------------------------------------------------------
 
 load("ProcessedData/detect_data_muri.Rdata")
 
 # Identify species (fish/other) columns — everything after the metadata block
-species_cols <- colnames(detect_data_muri)[(which(colnames(detect_data_muri) == "nReps") + 1):ncol(detect_data_muri)]
+species_cols <- names(detect_data_muri %>% dplyr::select(Agonidae:Zoarcidae) %>% 
+                        st_drop_geometry())
 
 # Build seqtab: one row per SampleUID (species cols are identical across the 21
 # BestTaxon rows for each SampleUID, so take the first), then collapse
@@ -20,34 +22,46 @@ species_cols <- colnames(detect_data_muri)[(which(colnames(detect_data_muri) == 
 # matching the AMBON rep-collapse approach.
 
 seqtab <- detect_data_muri %>%
+  st_drop_geometry() %>% 
   distinct(SampleUID, NWFSCsampleID, .keep_all = TRUE) %>%
-  select(NWFSCsampleID, all_of(species_cols)) %>%
+  dplyr::select(NWFSCsampleID, all_of(species_cols)) %>%
   group_by(NWFSCsampleID) %>%
   summarize(across(all_of(species_cols), ~ ceiling(mean(.x, na.rm = TRUE)))) %>%
   mutate(across(everything(), ~ replace_na(., 0))) %>%
-  column_to_rownames("NWFSCsampleID")
+  column_to_rownames("NWFSCsampleID") %>% 
+  ungroup() 
 
 # Build samdf: one row per NWFSCsampleID (take first rep for metadata)
 samdf <- detect_data_muri %>%
   distinct(NWFSCsampleID, .keep_all = TRUE) %>%
-  select(NWFSCsampleID, sample, station, Niskin, depth, transect, lat, lon,
-         water.depth, bathy.bottom.depth, bottom.depth.consensus,
+  dplyr::select(NWFSCsampleID, sample, station, Niskin, depth, transect, utm.lat, utm.lon,
+         lat_deg, lon_deg, water.depth, bathy.bottom.depth, bottom.depth.consensus,
          year, month, day, date, volume, Fluor, Zymo,
          control, drop.sample, field.negative.type, totalReads, nReps) %>%
   column_to_rownames("NWFSCsampleID")
 
-# Build taxa table: BestTaxon is already at species level in this dataset.
+# Build taxon table: BestTaxon is already at species level in this dataset.
 # Construct a minimal tax_table from detect_per_species names (all Mammalia).
 # For fish we don't have a taxonomy file — use species names as both genus and species.
-taxa_fish <- data.frame(
-  species = species_cols,
-  genus   = word(species_cols, 1),
-  family  = NA_character_,
-  class   = NA_character_,
-  phylum  = NA_character_,
-  kingdom = NA_character_,
-  row.names = species_cols
-) %>%
+
+taxa_fish <- data.frame(ASV = species_cols, label = species_cols) %>% 
+  mutate(n_words = str_count(label, "\\S+"),
+         rank = case_when(str_detect(label, "idae$") ~ "family",
+                          n_words >= 2 ~ "species",
+                          TRUE ~ "genus")) %>% 
+  mutate(genus = case_when(rank == "species" ~ word(label, 1), 
+                           rank == "genus" ~ label,
+                           TRUE ~ NA_character_),
+         species = case_when(rank == "species" ~ label,
+                             TRUE ~ NA_character_),
+         family = case_when(rank == "family" ~ label,
+                            TRUE ~ NA_character_),
+         order = NA_character_,
+         class = NA_character_,
+         phylum  = NA_character_,
+         kingdom = NA_character_) %>% 
+  select(ASV, kingdom, phylum, class, order, family, genus, species) %>% 
+  column_to_rownames("ASV") %>% 
   as.matrix()
 
 ### Make phyloseq object -------------------------------------------------------
@@ -61,19 +75,15 @@ ps <- phyloseq(otu_table(seqtab, taxa_are_rows = FALSE),
 # Collapse marine mammal detections: one row per NWFSCsampleID per BestTaxon,
 # then take ceiling(mean(Detected)) across dilution/techRep reps
 mm_detect_long <- detect_data_muri %>%
-  select(NWFSCsampleID, BestTaxon, Detected) %>%
+  dplyr::select(NWFSCsampleID, BestTaxon, Detected) %>%
   group_by(NWFSCsampleID, BestTaxon) %>%
   summarize(Detected = ceiling(mean(Detected, na.rm = TRUE)), .groups = "drop")
 
 mm_detect <- mm_detect_long %>%
+  st_drop_geometry() %>% 
   pivot_wider(names_from = BestTaxon, values_from = Detected, values_fill = 0) %>%
   mutate(total_sp = rowSums(across(-NWFSCsampleID))) %>%
   column_to_rownames("NWFSCsampleID")
-
-# detect_per_species is already in the Rdata (equivalent to detect_by_species in AMBON)
-detect_by_species <- detect_per_species %>%
-  rename(species = BestTaxon) %>%
-  arrange(-nDetect)
 
 detect_by_station <- mm_detect %>% filter(total_sp > 0) %>% count()
 
@@ -91,36 +101,47 @@ ps.fish.sp <- ps
 # Remove samples with no reads
 ps.fish.sp <- prune_samples(sample_sums(ps.fish.sp) > 0, ps.fish.sp)
 
+# glom to genus
+ps.gen <- tax_glom(ps.fish.sp, "genus")
+
 # Transform to proportional space
 ps.prop <- transform_sample_counts(ps.fish.sp, function(otu) otu / sum(otu))
 
+ps.prop.gen <- transform_sample_counts(ps.gen, function(otu) otu / sum(otu))
+
 ### Biodiversity ---------------------------------------------------------------
 
-plot_richness(ps.prop, x = "depth", measures = c("Shannon", "Simpson"))
+plot_richness(ps.prop.gen, x = "depth", measures = c("Shannon", "Simpson"))
 
-ord.nmds.bray <- ordinate(ps.prop, method = "NMDS", distance = "bray")
-p <- plot_ordination(ps.prop, ord.nmds.bray, color = "depth", title = "Bray NMDS")
+ord.nmds.bray <- ordinate(ps.prop.gen, method = "NMDS", distance = "bray")
+p <- plot_ordination(ps.prop.gen, ord.nmds.bray, color = "depth", title = "Bray NMDS")
 
-p + geom_text(aes(label = sample_names(ps.prop)), size = 2.5,
-              nudge_x = 0.02, nudge_y = 0.02)
+p + geom_text(aes(label = sample_names(ps.prop.gen)), size = 2.5,
+              nudge_x = 0.02, nudge_y = 0.02) +
+  scale_color_viridis_c()
 
 ### Community analysis of variance ---------------------------------------------
 
-# Use only species with at least 1 detection
-target_species <- detect_by_species %>%
-  filter(nDetect > 0) %>%
-  pull(species) %>%
-  gsub(" ", "\\.", .)
+# Use only species with at least 10 detection
+# target_species <- detect_per_species %>%
+#   filter(nDetect > 10) %>%
+#   pull(BestTaxon) %>%
+#   gsub(" ", "\\.", .)
+
+# Use only species in MURI environmental models
+target_species <- c("Berardius.bairdii", "Lagenorhynchus.obliquidens",
+                    "Megaptera.novaeangliae", "Mirounga.angustirostris",
+                    "Phocoena.phocoena","Zalophus.californianus")
 
 sig_results_list <- list()
 
 for (sp in target_species) {
   
   # Skip if column not in sample data (species with 0 detections excluded above)
-  if (!sp %in% colnames(sample_data(ps.fish.sp))) next
+  if (!sp %in% colnames(sample_data(ps.gen))) next
   
   # Run ANCOMBC2
-  out <- ancombc2(data = ps.fish.sp, tax_level = NULL, fix_formula = sp,
+  out <- ancombc2(data = ps.gen, tax_level = "genus", fix_formula = sp,
                   p_adj_method = "fdr", struc_zero = FALSE, neg_lb = FALSE,
                   pseudo = 0)
   
@@ -155,11 +176,13 @@ dev.off()
 
 ### Boxplots of potential prey species -----------------------------------------
 
-otu_de <- as(otu_table(ps.prop), "matrix")
-# column names are already species names
-colnames(otu_de) <- colnames(seqtab)[colnames(seqtab) %in% colnames(otu_de)]
+otu_de <- as(otu_table(ps.prop.gen), "matrix")
 
-prey_sp <- unique(sig_results_all$species)
+# convert column names when using ps.prop.gen
+colnames(otu_de) <- as.data.frame(tax_table(ps.prop.gen)) %>% pull(genus)
+
+
+prey_sp <- c(unique(sig_results_all$species), "Merluccius", "Thunnus")
 pred_sp <- unique(sig_results_all$predator)
 pred_cols <- gsub(" ", "\\.", pred_sp)
 
@@ -175,16 +198,17 @@ de_prey <- as.data.frame(otu_de) %>%
   pivot_longer(cols = any_of(pred_sp),     # same here
                names_to = "predator", values_to = "detected") %>%
   pivot_longer(cols = any_of(prey_sp),
-               names_to = "prey", values_to = "pReads") %>%
-  semi_join(sig_results_all, by = c("prey" = "species", "predator" = "predator"))
+               names_to = "prey", values_to = "pReads") 
+  #semi_join(sig_results_all, by = c("prey" = "species", "predator" = "predator"))
 
 muriPreyBox <- ggplot(de_prey, aes(y = pReads, x = prey, fill = as.factor(detected))) +
   geom_boxplot(outliers = FALSE) +
   facet_wrap("predator", scales = "free", ncol = 2) +
   theme_minimal() +
-  scale_x_discrete(guide = guide_axis(n.dodge = 2))
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+  theme(strip.text = element_text(size = 14))
 
-png("Figures/MURI_prey_boxplot.png")
+png("Figures/MURI_prey_boxplot.png", width = 1500, height = 2000)
 muriPreyBox
 dev.off()
 
@@ -196,3 +220,29 @@ save(ps.fish.sp, ps.prop,
      mm_detect, de_prey,
      sig_results_all,
      file = "./data products/MURI_prey_exploration.Rdata")
+
+### Combine with detection data ------------------------------------------------
+
+de_prey_wide <- de_prey %>% 
+  pivot_wider(names_from = prey, values_from = pReads)
+
+load("./ProcessedData/detect_and_env_muri.Rdata")
+
+detect_data_all_muri <- detect_data_merge_muri %>% 
+  st_drop_geometry() %>% 
+  dplyr::select(-(Agonidae:Zoarcidae)) %>% 
+  group_by(NWFSCsampleID, depth, 
+           date, year, month, day, water.depth, bathy.bottom.depth,    
+           bottom.depth.consensus, utm.lon, utm.lat, transect.dist.km, 
+           control, nReps, lat_deg, lon_deg, x, y, bathy, distShore, slope,
+           SSS07, SST07, curVel, Chla, mld_dr003_7, BestTaxon) %>% 
+  summarize(Detected = ceiling(mean(Detected, na.rm = TRUE)), .groups = "drop") %>% 
+  left_join(de_prey_wide, by = c("NWFSCsampleID" = "NWFSCsampleID", 
+                                 "BestTaxon" = "predator",
+                                 "Detected" = "detected"))
+  
+save(env_data_muri, env_df_muri, detect_data_target,
+     detect_data_merge_muri, detect_data_all_muri,
+     de_prey, de_prey_wide,
+     file = "ProcessedData/detect_env_prey_muri.Rdata")
+

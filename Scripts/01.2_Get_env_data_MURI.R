@@ -5,6 +5,7 @@
 library(tidyverse)
 library(sdmpredictors)
 library(terra)
+library(raster)
 
 # set environmental data directory
 options(sdmpredictors_datadir = "Data/env-data")
@@ -18,8 +19,7 @@ detect_data_target <- detect_data_muri %>%
                           "Megaptera novaeangliae",
                           "Mirounga angustirostris",
                           "Zalophus californianus",
-                          "Phocoena phocoena",
-                          "Berardius bairdii"))
+                          "Phocoena phocoena"))
 
 detect_data_target %>% group_by(station) %>% n_groups() #177 station
 detect_data_target %>% group_by(depth, station) %>% n_groups() #527 station/depths
@@ -48,14 +48,17 @@ names(env_dataBO) <- c("curVel", "Chla")
 # MLD downloaded from de Boyer montégut Clément, https://www.seanoe.org/data/00806/91774/
 mld <- rast("Data/MURI/mld_dr003_ref10m_v2023.nc")
 mld7 <- mld[["mld_dr003_7"]]
+mld7 <- terra::unwrap(mld7)
 
 # nepac <- ext(-160, -100, 10, 70)
 # mld_np <- crop(mld, nepac)
 # plot(mld_np[["mld_dr003_7"]])
 
 #resample to fit resolution
+writeRaster(mld7, "mld7_temp.tif", overwrite = TRUE)
+mld7_clean <- rast("mld7_temp.tif")
 template <- rast(env_dataMS[[1]])
-mld7_res <- resample(mld7, template, method = "bilinear")
+mld7_res <- resample(mld7_clean, template, method = "bilinear")
 
 ### Combine all layers ---------------------------------------------------------
 env_data <- c(rast(env_dataMS), rast(env_dataBO), mld7_res)
