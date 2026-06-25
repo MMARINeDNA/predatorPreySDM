@@ -7,7 +7,7 @@ library(ggOceanMaps)
 
 ## Get data --------------------------------------------------------------------
 
-load("./ProcessedData/detect_data.Rdata")
+load("./ProcessedData/detect_data_muri.Rdata")
 
 
 ## Get station locations -------------------------------------------------------
@@ -43,7 +43,7 @@ map <- basemap(limits = c(min(station_loc$lon)-0.2,
 
 map
 
-save(map, file = "./Figures/sampling_map.Rdata")
+save(map, file = "./ProcessedData/sampling_map.Rdata")
 
 survey_box <- data.frame(
   xmin = -124.6,
