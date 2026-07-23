@@ -1,6 +1,6 @@
-#### 3D Distribution
-#### Figure 1 Sampling map
-#### AVC October 2025
+#### predatorPrey Distribution
+#### MURI sampling map
+#### AVC summer 2026
 
 library(tidyverse)
 library(ggOceanMaps)

@@ -7,11 +7,13 @@ library(PNWColors)
 library(microViz)
 library(ANCOMBC)
 
-### Get data -------------------------------------------------------------------
+### Get MV1 data ---------------------------------------------------------------
+#Data downloaded from Kim Ledger's GitHub repo: dbo-marver-mb
+#https://github.com/kjledger-NOAA/dbo_marver_mb/tree/main/outputs
 
 seqtab <- read.csv("Data/AMBON/ASVtable.csv") %>% 
   separate(1, into = c("sample", "rep")) %>% 
-  group_by(sample) %>% 
+  group_by(sample) %>%  
   summarize(across(c(ASV1:ASV880), ~ceiling(mean(.x, na.rm = TRUE)))) %>% 
   mutate(across(everything(), ~replace_na(., 0))) %>% 
   column_to_rownames("sample")

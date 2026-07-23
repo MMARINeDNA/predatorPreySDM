@@ -11,7 +11,7 @@ library(raster)
 library(terra)
 library(sp)
 library(sf)
-library(rgdal)
+#library(rgdal) retired
 library(viridis)
 
 load("ProcessedData/detect_data_ambon.Rdata")
@@ -33,12 +33,11 @@ shipboard_meta <- read.csv("./Data/AMBON/FAIRe_noaa-afsc-dbo1.csv") %>%
   filter(samp_category == "sample") %>% 
   filter(!grepl("not applicable", station_id)) %>% 
   dplyr::select(-samp_category) %>% 
-  mutate(across(2:8, .fns = as.numeric), eventDate = as.Date(
-    parse_date_time(
-      eventDate,
-      orders = c("ymd HMS", "mdy")))) %>% 
+  mutate(across(2:8, .fns = as.numeric), 
+         eventDate = as.Date(parse_date_time(eventDate,
+                                             orders = c("ymd HMS", "mdy")))) %>% 
   group_by(cruise_id,station_id) %>% 
-  summarise(across(where(is.numeric), mean, na.rm = TRUE),
+  summarise(across(where(is.numeric), \(x) mean(x, na.rm = TRUE)),
             eventDate = mean(eventDate, na.rm = TRUE)) %>% 
   ungroup() %>% 
   mutate(decimalLongitude_360 = ifelse(decimalLongitude < 0,
@@ -49,9 +48,12 @@ shipboard_meta <- read.csv("./Data/AMBON/FAIRe_noaa-afsc-dbo1.csv") %>%
   
 #Also available from ship data: nitrate, nitrite, ammonium, phosphate, pressure, silicate
 
-detect_data_env <- detect_data %>% 
-  left_join(shipboard_meta, by = "station_id") %>% 
-  mutate(x = decimalLongitude, y = decimalLatitude) %>% 
+detect_data_env_ambon <- detect_data_ambon %>% 
+  mutate(decimalLongitude = as.numeric(decimalLongitude), decimalLatitude = as.numeric(decimalLatitude),
+         eventDate = as.Date(parse_date_time(eventDate,
+                                             orders = c("ymd HMS", "mdy")))) %>% 
+  left_join(shipboard_meta, by = c("station_id")) %>% #check this merge: something doesn't match between dataframe in "decimalLongitude", "decimalLatitude", or "eventDate"
+  mutate(x = decimalLongitude.x, y = decimalLatitude.x) %>% 
   st_as_sf(coords = c("x", "y"), crs = 4326) %>% 
   st_transform(st_crs(iceShape))
 
@@ -104,10 +106,10 @@ env_data <- c(rast(env_dataMS), rast(env_dataBO),
               iceDist_raster)
 
 # merge satellite data with shipboard data (detections and environment)
-data_extent <- raster::crop(env_data, extent(min(detect_data_env$decimalLongitude),
-                                                 max(detect_data_env$decimalLongitude),
-                                                 min(detect_data_env$decimalLatitude),
-                                                 max(detect_data_env$decimalLatitude)))
+data_extent <- raster::crop(env_data, extent(min(detect_data_env_ambon$decimalLongitude.x),
+                                                 max(detect_data_env_ambon$decimalLongitude.x),
+                                                 min(detect_data_env_ambon$decimalLatitude.x),
+                                                 max(detect_data_env_ambon$decimalLatitude.x)))
 
 data_correlations <- cor(values(data_extent), use = "pairwise.complete.obs")
 plot_correlation(data_correlations)
@@ -118,11 +120,11 @@ env_df <- as.data.frame(data_extent, xy=TRUE) %>%
   st_transform(32610) 
 
 iceShape <- iceShape %>% 
-  st_crop(st_bbox(detect_data_env))
+  st_crop(st_bbox(detect_data_env_ambon))
 
 ### Merge satellite and shipboard data -----------------------------------------
 
-detect_data_merge <- detect_data_env %>% 
+detect_data_merge_ambon <- detect_data_env_ambon %>% 
   st_transform(32610) %>% 
   st_join(env_df, join = st_nearest_feature) %>% 
   mutate(MS_sst = case_when(month>= 9~MS_sst9,
@@ -135,7 +137,7 @@ detect_data_merge <- detect_data_env %>%
 ### Save env data --------------------------------------------------------------
 
 save(data_extent, env_data, env_df, 
-     detect_data_env, detect_data_merge,
+     detect_data_env_ambon, detect_data_merge_ambon,
      iceShape, file = "ProcessedData/detect_and_env_ambon.Rdata")
 
 
