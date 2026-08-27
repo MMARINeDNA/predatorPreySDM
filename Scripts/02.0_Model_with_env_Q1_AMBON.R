@@ -6,12 +6,14 @@
 library(tidyverse)
 library(PNWColors)
 
-#mapping
+#spatial
 library(marmap)
 library(terra)
+library(sf)
 
 #modeling
 library(mgcv)
+library(MuMIn)
 
 load("./ProcessedData/detect_and_env_ambon.Rdata")
 detect_data_merge_ambon <- detect_data_merge_ambon %>% mutate(BestTaxon = as.factor(species)) %>% 
@@ -22,16 +24,17 @@ detect_per_species <- detect_data_merge_ambon %>%
   summarize(nDetect = sum(Detected)) %>% 
   st_drop_geometry()
 
+keep_species <- detect_per_species %>%
+  filter(nDetect >= 20) %>%
+  separate(species, into = c("genus", "species")) %>% 
+  mutate(list_name = paste(genus, geo_group, sep = "."))
+
 ### Split into species-level datasets ------------------------------------------
 
 detect_data_list <- split(detect_data_merge_ambon, list(detect_data_merge_ambon$sp_group, detect_data_merge_ambon$geo_group))
 
-list2env(setNames(detect_data_list,
-    paste0("detect_data_", names(detect_data_list))), envir = .GlobalEnv)
-
-rm(detect_data_list)
-
-save(list = ls(pattern = "detect_data_"), file = "ProcessedData/detect_data_subset_ambon.RData")
+# filter out species/geo groups with < 20 detections
+detect_data_list <- detect_data_list[names(detect_data_list) %in% keep_species$list_name]
 
 ### Get bathymetry for pred grid -----------------------------------------------
 
@@ -46,86 +49,163 @@ bathy_r <- rast(bathy_raster)
 
 ### Q1.0: Depth smoothed over xy with shape and intercept variable by species --
 
-## Odobenus
-m1.0_OrA <- bam(Detected ~ ti(lat, lon, bs = "tp", k = 13),
+m1.0summary <- data.frame(model = character(),
+                          p = numeric(),
+                          deviance = numeric(),
+                          AIC = numeric(),
+                          kcheckp = numeric(),
+                          pear.disp = numeric(),
+                          nDetect = numeric(),
+                          stringsAsFactors = FALSE)
+m1.0list <- list()
+
+for (i in 1:length(detect_data_list)){
+m1.0_temp <- bam(Detected ~ ti(lat, lon, bs = "tp"),
                family = "binomial",
                method = "fREML",
-               data = detect_data_Odobenus.Arctic,
+               data = detect_data_list[[i]],
                discrete = TRUE)
 
-summary(m1.0_OrA)
-# Parametric coefficients:
-#   Estimate Std. Error z value Pr(>|z|)    
-# (Intercept)  -2.3317     0.3319  -7.026 2.13e-12 ***
-#   ---
-#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-# 
-# Approximate significance of smooth terms:
-#   edf Ref.df Chi.sq p-value  
-# ti(lat,lon) 8.404   10.5  18.48  0.0502 .
-# ---
-#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-# 
-# R-sq.(adj) =  0.116   Deviance explained = 21.1%
-# fREML = 65.954  Scale est. = 1         n = 237
+modelSummary <- data.frame(model = names(detect_data_list)[i],
+  p = summary(m1.0_temp)$s.table[1, "p-value"],
+  deviance = summary(m1.0_temp)$dev.expl,
+  AIC = AIC(m1.0_temp),
+  kcheckp = k.check(m1.0_temp)[1,"p-value"],
+  pear.disp = sum(residuals(m1.0_temp, type = "pearson")^2) / df.residual(m1.0_temp),
+  nDetect = sum(detect_data_list[[i]]$Detected),
+  stringsAsFactors = FALSE)
 
-AIC(m1.0_OrA)
-# 141
-
-#mean squared Pearson residual dispersion parameter
-sum(residuals(m1.0_OrA, type = "pearson")^2) / df.residual(m1.0_OrA)
-#0.65
+m1.0list[[i]] <- m1.0_temp
+m1.0summary <- rbind(m1.0summary, modelSummary)
+}
 
 ### m1.0 predictions ----------------------------------------------------------
 
-## Odobenus
-m1.0_OrA_pred_grid <- expand_grid(lat = seq(min(detect_data_Odobenus.Arctic$lat, na.rm = TRUE),
-                                            max(detect_data_Odobenus.Arctic$lat, na.rm = TRUE),
+m1.0sePreds_list <- list()
+
+for (i in 1:length(detect_data_list)){
+m1.0_pred_grid <- expand_grid(lat = seq(min(detect_data_list[[i]]$lat, na.rm = TRUE),
+                                            max(detect_data_list[[i]]$lat, na.rm = TRUE),
                                             by = 1),
-                              lon = seq(min(detect_data_Odobenus.Arctic$lon, na.rm = TRUE),
-                                            max(detect_data_Odobenus.Arctic$lon, na.rm = TRUE),
+                              lon = seq(min(detect_data_list[[i]]$lon, na.rm = TRUE),
+                                            max(detect_data_list[[i]]$lon, na.rm = TRUE),
                                             by = 1))
 # response predictions
-m1.0_OrApreds <- predict.bam(m1.0_OrA, m1.0_OrA_pred_grid,
+m1.0_preds <- predict.bam(m1.0list[[i]], m1.0_pred_grid,
                          se.fit = TRUE)
 
-m1.0_OrA_sePreds <- data.frame(m1.0_OrA_pred_grid,
-                           mu   = binomial()$linkinv(m1.0_OrApreds$fit),
-                           low  = binomial()$linkinv(m1.0_OrApreds$fit - 1.96 * m1.0_OrApreds$se.fit),
-                           high = binomial()$linkinv(m1.0_OrApreds$fit + 1.96 * m1.0_OrApreds$se.fit),
-                           low50  = binomial()$linkinv(m1.0_OrApreds$fit - 0.674 * m1.0_OrApreds$se.fit),
-                           high50 = binomial()$linkinv(m1.0_OrApreds$fit + 0.674 * m1.0_OrApreds$se.fit))
+m1.0_sePreds <- data.frame(m1.0_pred_grid,
+                           mu   = binomial()$linkinv(m1.0_preds$fit),
+                           low  = binomial()$linkinv(m1.0_preds$fit - 1.96 * m1.0_preds$se.fit),
+                           high = binomial()$linkinv(m1.0_preds$fit + 1.96 * m1.0_preds$se.fit),
+                           low50  = binomial()$linkinv(m1.0_preds$fit - 0.674 * m1.0_preds$se.fit),
+                           high50 = binomial()$linkinv(m1.0_preds$fit + 0.674 * m1.0_preds$se.fit))
+
+m1.0sePreds_list[[i]] <- m1.0_sePreds
+
+}
+
+save(m1.0list, m1.0summary, m1.0sePreds_list, file = "ProcessedData/m1.0.Rdata")
 
 ### Detection rate smoothed over depth and env variables with shape and intercept by species
-m1.1_OrA <-
-  bam(Detected ~ 
-        ti(lat, lon, bs = "tp", k = 13) +
-        s(bathy, bs="ts") +
-        #s(distShore, bs = "ts") +
-        s(BO_meanChl, bs = "ts") +
-        #s(BO_meanChl_ss, bs = "ts") +
-        s(MS_sst8, bs="ts") +
-        #s(MS_sst9, bs="ts") +
-        #s(curVel, bs="ts") +
-        #s(MS_sss8, bs="ts") +
-        #s(MS_sss9, bs="ts") +
-        #s(iceDist, bs = "ts") +
-        s(iceCov, bs = "ts"),
-        #s(iceThick, bs = "ts"),
-      family = "binomial",
-      method = "fREML",
-      data = detect_data_Odobenus.Arctic,
-      discrete = TRUE)
+detect_data_list_clean <- lapply(
+  detect_data_list,
+  st_drop_geometry)
 
-summary(m1.1_OrA)
-#Deviance explained = 21.3%
+m1.1_dredge_list <- list()
+m1.1_top_models_list <- list()
 
-AIC(m1.1_OrA)
-#128
+for (i in 1:length(detect_data_list_clean)){
+
+  print(i)
+  print(Sys.time())
+  
+  tempdat <- detect_data_list_clean[[i]]
+  
+  # set global model
+  global <- gam(Detected ~
+                  ti(lat, lon) +
+                  s(bathy) +
+                  #s(slope) +
+                  s(distShore) +
+                  #s(BO_O2) +
+                  s(BO_meanChl) +
+                  s(BO_meanChl_ss) +
+                  #s(MS_sst8) +
+                  s(MS_sst9) +
+                  s(curVel) +
+                  #s(MS_sss8) +
+                  s(MS_sss9) +
+                  s(iceDist) +
+                  s(iceCov),
+                  #s(iceThick),
+                family = binomial(),
+                method = "ML",
+                data = tempdat,
+                na.action = "na.fail")
+  
+  m1.1 <- dredge(global)
+
+  # Keep the complete dredge object
+  m1.1_dredge_list[[i]] <- m1.1
+  
+  # Keep the delta < 2 models as a table
+  m1.1_top_models_list[[i]] <- m1.1 %>%
+    filter(delta < 2) %>%
+    mutate(species = names(detect_data_list_clean)[i])
+}
+
+
+# model selection
+
+m1.1_allspecies <- bind_rows(top_models_list) %>% 
+  filter(!(is.na(species)))
+
+selected_model_summaries <- list()
+model_selection_summary <- list()
+
+for (i in 1:length(top_models_list)) {
+  
+  top_models <- get.models(dredge_list[[i]], subset = delta < 2)
+  dev_exp <- sapply(top_models, function(x) summary(x)$dev.expl)
+  
+  model_summary <- data.frame(model = names(top_models),
+                              delta = sapply(top_models, function(x) AICc(x) - min(sapply(top_models, AICc))),
+                              deviance = dev_exp,
+                              n_terms = sapply(top_models, function(x) length(attr(terms(x), "term.labels")) - 1))
+  
+  max_dev <- max(model_summary$deviance)
+  
+  # rules for model selection are:
+  # 1. delta AIC < 1.5
+  # 2. within 5% of maximum deviance explained
+  # 3. minimize number of parameters
+  
+  final_model <- model_summary %>% 
+    filter(delta < 1.5) %>% 
+    filter(deviance >= 0.70 * max_dev) %>% 
+    arrange(n_terms, delta) %>%
+    slice(1)
+  
+  selected_model_summaries[[i]] <- as.data.frame(summary(top_models[[as.character(final_model$model)]])$s.table)
+  
+  model_selection_summary[[i]] <- data.frame(species = top_models_list[[i]]$species[1],
+                                              model = final_model$model,
+                                              delta = final_model$delta,
+                                              deviance = final_model$deviance,
+                                              n_terms = final_model$n_terms)
+  
+}
+
+m1.1_model_selection <- bind_rows(model_selection_summary)
+
+m1.1_selected_models <- bind_rows(selected_model_summaries)
 
 ### Save -----------------------------------------------------------------------
 
-save(m1.0_OrA, m1.0_OrA_sePreds, m1.1_OrA, file = "ProcessedData/Q1_OrA.Rdata")
+save(m1.1_model_selection, m1.1_selected_models, m1.1_dredge_list, m1.1_top_models_list, file = "ProcessedData/m1.1.Rdata")
+
+
 
 ### ALL SPECIES MODEL HERE ####################################################             
 # m1.0 <-

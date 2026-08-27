@@ -114,10 +114,26 @@ data_extent <- raster::crop(env_data, extent(min(detect_data_env_ambon$decimalLo
 data_correlations <- cor(values(data_extent), use = "pairwise.complete.obs")
 plot_correlation(data_correlations)
 
+# which variables have the highest correlation
+
+data_correlations[upper.tri(data_correlations, diag = TRUE)] <- NA
+
+high_cor <- as.data.frame(as.table(data_correlations)) %>%
+  filter(!is.na(Freq),
+         abs(Freq) > 0.7) %>%
+  rename(variable1 = Var1,
+         variable2 = Var2,
+         correlation = Freq) %>%
+  arrange(desc(abs(correlation)))
+
+# convert to data frame
+
 env_df <- as.data.frame(data_extent, xy=TRUE) %>% 
   mutate(xlon = x, ylat = y) %>% 
   st_as_sf(coords = c("xlon", "ylat"), crs = 4326) %>% 
   st_transform(32610) 
+
+# crop ice shape file
 
 iceShape <- iceShape %>% 
   st_crop(st_bbox(detect_data_env_ambon))

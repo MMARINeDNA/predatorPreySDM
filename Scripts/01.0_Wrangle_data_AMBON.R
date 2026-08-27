@@ -35,7 +35,7 @@ fish_data <- read.csv("./data/AMBON/ASVtable.csv") %>%
   mutate(across(everything(), ~replace_na(., 0))) %>% 
   pivot_longer(-c(sample, rep), names_to = "ASV", values_to = "nReads") %>%
   left_join(taxa, by = "ASV") %>% 
-  filter(class != "Mammalia") %>% 
+  #filter(class != "Mammalia") %>% 
   mutate(species = case_when(is.na(genus)~ASV,
                             is.na(species)~paste(genus, " spp."),
                              TRUE~species)) %>% 
@@ -47,6 +47,16 @@ fish_data <- read.csv("./data/AMBON/ASVtable.csv") %>%
   filter(!grepl("ASV", species)) %>% 
   pivot_wider(names_from = "species", values_from = "totReads")
   
+test <- fish_data %>% left_join(metadata, "sample") %>% 
+  filter(samp_category == "sample") %>% 
+  filter(!grepl("not applicable", station_id)) %>%
+  filter(totReads > 0) %>% 
+  group_by(sample) %>% 
+  summarize(sampleReads = sum(totReads), sampleSpecies = n())
+
+meantest <- test %>% ungroup() %>% 
+  summarize(mean(sampleReads), mean(sampleSpecies))
+
 detect_data_ambon <- read.csv("./data/AMBON/ASVtable.csv") %>% 
   separate(1, into = c("sample", "rep")) %>% 
   mutate(across(everything(), ~replace_na(., 0))) %>% 
