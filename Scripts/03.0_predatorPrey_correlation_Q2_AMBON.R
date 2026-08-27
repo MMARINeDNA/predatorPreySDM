@@ -167,9 +167,9 @@ dev.off()
 
 #### Save data -----------------------------------------------------------------
 
-save(mv1Preydiff, mv1PreyBox, file = "./data products/MV1_prey_plots.Rdata")
+save(mv1Preydiff, mv1PreyBox, file = "./ProcessedData/MV1_prey_plots.Rdata")
 save(ps.fish.sp, ps.prop, 
      detect_by_station, detect_by_species, 
      mm_detect, de_prey,
      sig_results_all,
-     file = "./data products/MV1_prey_exploration.Rdata")
+     file = "./ProcessedData/MV1_prey_exploration.Rdata")
