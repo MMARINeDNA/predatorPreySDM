@@ -12,6 +12,7 @@ library(PNWColors)
 library(ggOceanMaps)
 library(scatterpie)
 library(mapdata)
+library(sf)
 
 #Note: As of July 2026, this code gloms all ASVs to species level (or genus if 
 #there is no species ID) and keeps marine mammal detections and prey species
@@ -47,15 +48,15 @@ fish_data <- read.csv("./data/AMBON/ASVtable.csv") %>%
   filter(!grepl("ASV", species)) %>% 
   pivot_wider(names_from = "species", values_from = "totReads")
   
-test <- fish_data %>% left_join(metadata, "sample") %>% 
-  filter(samp_category == "sample") %>% 
-  filter(!grepl("not applicable", station_id)) %>%
-  filter(totReads > 0) %>% 
-  group_by(sample) %>% 
-  summarize(sampleReads = sum(totReads), sampleSpecies = n())
+# test <- fish_data %>% left_join(metadata, "sample") %>% 
+#   filter(samp_category == "sample") %>% 
+#   filter(!grepl("not applicable", station_id)) %>%
+#   filter(totReads > 0) %>% 
+#   group_by(sample) %>% 
+#   summarize(sampleReads = sum(totReads), sampleSpecies = n())
 
-meantest <- test %>% ungroup() %>% 
-  summarize(mean(sampleReads), mean(sampleSpecies))
+# meantest <- test %>% ungroup() %>% 
+#   summarize(mean(sampleReads), mean(sampleSpecies))
 
 detect_data_ambon <- read.csv("./data/AMBON/ASVtable.csv") %>% 
   separate(1, into = c("sample", "rep")) %>% 
@@ -81,6 +82,13 @@ detect_data_ambon <- read.csv("./data/AMBON/ASVtable.csv") %>%
   left_join(fish_data, by = c("sample","rep")) %>% 
   mutate(lat = as.numeric(decimalLatitude), lon = as.numeric(decimalLongitude)) %>% 
   mutate(geo_group = case_when(lat > 69~"Arctic",
-                               TRUE~"Bering"))
+                               TRUE~"Bering")) %>% 
+  st_as_sf(coords = c("lon", "lat"),
+    crs = 4326,
+    remove = FALSE) %>% 
+  st_transform(3338) %>% 
+  mutate(lon_AAmeters = st_coordinates(.)[,1],
+    lat_AAmeters = st_coordinates(.)[,2]) %>% 
+  st_drop_geometry()
 
 save(detect_data_ambon, metadata, file = "./ProcessedData/detect_data_ambon.Rdata")

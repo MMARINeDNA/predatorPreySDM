@@ -1,6 +1,6 @@
 #### Distribution w environmental variables
 #### Summer 2026
-#### AVC&MS, m1.0 from zDist m3.0c
+#### AVC&MS
 
 #general
 library(tidyverse)
@@ -34,7 +34,10 @@ keep_species <- detect_per_species %>%
 detect_data_list <- split(detect_data_merge_ambon, list(detect_data_merge_ambon$sp_group, detect_data_merge_ambon$geo_group))
 
 # filter out species/geo groups with < 20 detections
-detect_data_list <- detect_data_list[names(detect_data_list) %in% keep_species$list_name]
+detect_data_list <- detect_data_list[names(detect_data_list) %in% keep_species$list_name] %>% 
+  lapply(st_drop_geometry)
+
+save(detect_data_list, file = "ProcessedData/detect_data_list_ambon.Rdata")
 
 ### Get bathymetry for pred grid -----------------------------------------------
 
@@ -60,7 +63,7 @@ m1.0summary <- data.frame(model = character(),
 m1.0list <- list()
 
 for (i in 1:length(detect_data_list)){
-m1.0_temp <- bam(Detected ~ ti(lat, lon, bs = "tp"),
+m1.0_temp <- bam(Detected ~ ti(lat_AAmeters, lon_AAmeters, bs = "tp"),
                family = "binomial",
                method = "fREML",
                data = detect_data_list[[i]],
@@ -84,12 +87,12 @@ m1.0summary <- rbind(m1.0summary, modelSummary)
 m1.0sePreds_list <- list()
 
 for (i in 1:length(detect_data_list)){
-m1.0_pred_grid <- expand_grid(lat = seq(min(detect_data_list[[i]]$lat, na.rm = TRUE),
-                                            max(detect_data_list[[i]]$lat, na.rm = TRUE),
-                                            by = 1),
-                              lon = seq(min(detect_data_list[[i]]$lon, na.rm = TRUE),
-                                            max(detect_data_list[[i]]$lon, na.rm = TRUE),
-                                            by = 1))
+m1.0_pred_grid <- expand_grid(lat_AAmeters = seq(min(detect_data_list[[i]]$lat_AAmeters, na.rm = TRUE),
+                                            max(detect_data_list[[i]]$lat_AAmeters, na.rm = TRUE),
+                                            by = 10000),
+                              lon_AAmeters = seq(min(detect_data_list[[i]]$lon_AAmeters, na.rm = TRUE),
+                                            max(detect_data_list[[i]]$lon_AAmeters, na.rm = TRUE),
+                                            by = 10000))
 # response predictions
 m1.0_preds <- predict.bam(m1.0list[[i]], m1.0_pred_grid,
                          se.fit = TRUE)
@@ -107,24 +110,20 @@ m1.0sePreds_list[[i]] <- m1.0_sePreds
 
 save(m1.0list, m1.0summary, m1.0sePreds_list, file = "ProcessedData/m1.0.Rdata")
 
-### Detection rate smoothed over depth and env variables with shape and intercept by species
-detect_data_list_clean <- lapply(
-  detect_data_list,
-  st_drop_geometry)
-
+### Detection rate smoothed env variables with shape and intercept by species
 m1.1_dredge_list <- list()
 m1.1_top_models_list <- list()
 
-for (i in 1:length(detect_data_list_clean)){
+for (i in 1:length(detect_data_list)){
 
   print(i)
   print(Sys.time())
   
-  tempdat <- detect_data_list_clean[[i]]
+  tempdat <- detect_data_list[[i]]
   
   # set global model
   global <- gam(Detected ~
-                  ti(lat, lon) +
+                  ti(lat_AAmeters, lon_AAmeters) +
                   s(bathy) +
                   #s(slope) +
                   s(distShore) +
@@ -152,59 +151,80 @@ for (i in 1:length(detect_data_list_clean)){
   # Keep the delta < 2 models as a table
   m1.1_top_models_list[[i]] <- m1.1 %>%
     filter(delta < 2) %>%
-    mutate(species = names(detect_data_list_clean)[i])
+    mutate(species = names(detect_data_list)[i])
 }
 
 
 # model selection
 
-m1.1_allspecies <- bind_rows(top_models_list) %>% 
+m1.1_allspecies <- bind_rows(m1.1_top_models_list) %>% 
   filter(!(is.na(species)))
 
 selected_model_summaries <- list()
 model_selection_summary <- list()
 
-for (i in 1:length(top_models_list)) {
+for (i in 1:length(m1.1_top_models_list)) {
   
-  top_models <- get.models(dredge_list[[i]], subset = delta < 2)
+  tempdat <- detect_data_list[[i]]
+  
+  top_models <- get.models(m1.1_dredge_list[[i]], subset = delta < 2)
   dev_exp <- sapply(top_models, function(x) summary(x)$dev.expl)
   
   model_summary <- data.frame(model = names(top_models),
                               delta = sapply(top_models, function(x) AICc(x) - min(sapply(top_models, AICc))),
-                              deviance = dev_exp,
-                              n_terms = sapply(top_models, function(x) length(attr(terms(x), "term.labels")) - 1))
+                              m1.1deviance = dev_exp,
+                              n_terms = sapply(top_models, function(x) {
+                                st <- summary(x)$s.table
+                                if (is.null(st)) 0 else nrow(st)
+                              }))
   
-  max_dev <- max(model_summary$deviance)
+  max_dev <- max(model_summary$m1.1deviance)
   
   # rules for model selection are:
   # 1. delta AIC < 1.5
-  # 2. within 5% of maximum deviance explained
+  # 2. within 70% of maximum deviance explained
   # 3. minimize number of parameters
   
   final_model <- model_summary %>% 
     filter(delta < 1.5) %>% 
-    filter(deviance >= 0.70 * max_dev) %>% 
+    filter(m1.1deviance >= 0.70 * max_dev) %>% 
     arrange(n_terms, delta) %>%
     slice(1)
   
-  selected_model_summaries[[i]] <- as.data.frame(summary(top_models[[as.character(final_model$model)]])$s.table)
+  selected_model_summaries[[i]] <- data.frame(species = m1.1_top_models_list[[i]]$species[1],
+                                                 summary(top_models[[as.character(final_model$model)]])$s.table)
   
-  model_selection_summary[[i]] <- data.frame(species = top_models_list[[i]]$species[1],
+  selected_model_summaries[[i]] <- data.frame(
+    species = m1.1_top_models_list[[i]]$species[1],
+    parameter = attr(
+      terms(top_models[[as.character(final_model$model)]]),
+      "term.labels"))
+  
+  model_selection_summary[[i]] <- data.frame(species = m1.1_top_models_list[[i]]$species[1],
                                               model = final_model$model,
                                               delta = final_model$delta,
-                                              deviance = final_model$deviance,
+                                              m1.1deviance = final_model$m1.1deviance,
                                               n_terms = final_model$n_terms)
   
 }
 
 m1.1_model_selection <- bind_rows(model_selection_summary)
 
-m1.1_selected_models <- bind_rows(selected_model_summaries)
+m1.1_selected_models <- bind_rows(selected_model_summaries) 
+ 
+### combined deviance table
+
+Q1_model_compare <- m1.0summary %>% 
+  mutate(m1.0deviance = deviance) %>% 
+  dplyr::select(-deviance) %>% 
+  left_join(m1.1_model_selection, by = c("model" = "species")) %>% 
+  mutate(deltadeviance = m1.1deviance - m1.0deviance)
 
 ### Save -----------------------------------------------------------------------
 
-save(m1.1_model_selection, m1.1_selected_models, m1.1_dredge_list, m1.1_top_models_list, file = "ProcessedData/m1.1.Rdata")
-
+save(m1.1_model_selection, m1.1_selected_models, 
+     m1.1_dredge_list, m1.1_top_models_list, 
+     Q1_model_compare, file = "ProcessedData/m1.1.Rdata")
 
 
 ### ALL SPECIES MODEL HERE ####################################################             
