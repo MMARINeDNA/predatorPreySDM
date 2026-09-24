@@ -12,7 +12,7 @@ library(pROC)
 library(tidysdm)
 
 #load data
-load("ProcessedData/m1.1.Rdata")
+load("ProcessedData/m1.1_ambon.Rdata")
 load("ProcessedData/detect_data_list_ambon.Rdata")
 
 ### m1.1 AUC and TSS -----------------------------------------------------------
@@ -138,4 +138,4 @@ rm(m1.1train, m1.1_TSS_list, TSS_df, AUC_df, roc_object,
    detect_data_train, detect_data_test, detect_data_AUC,
    m1.1_AUC_list, i, j, k, lower, upper, threshold)
 
-save(m1.1_AUC_df, m1.1_TSS_df, m1.1_TSS_plot, file = "ProcessedData/m1.1_performance.Rdata")
+save(m1.1_AUC_df, m1.1_TSS_df, m1.1_TSS_plot, file = "ProcessedData/m1.1_performance_ambon.Rdata")

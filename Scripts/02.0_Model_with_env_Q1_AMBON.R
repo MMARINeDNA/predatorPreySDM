@@ -108,7 +108,7 @@ m1.0sePreds_list[[i]] <- m1.0_sePreds
 
 }
 
-save(m1.0list, m1.0summary, m1.0sePreds_list, file = "ProcessedData/m1.0.Rdata")
+save(m1.0list, m1.0summary, m1.0sePreds_list, file = "ProcessedData/m1.0_ambon.Rdata")
 
 ### Detection rate smoothed env variables with shape and intercept by species
 m1.1_dredge_list <- list()
@@ -224,7 +224,7 @@ Q1_model_compare <- m1.0summary %>%
 
 save(m1.1_model_selection, m1.1_selected_models, 
      m1.1_dredge_list, m1.1_top_models_list, 
-     Q1_model_compare, file = "ProcessedData/m1.1.Rdata")
+     Q1_model_compare, file = "ProcessedData/m1.1_ambon.Rdata")
 
 
 ### ALL SPECIES MODEL HERE ####################################################             

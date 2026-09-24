@@ -12,9 +12,9 @@ library(pROC)
 library(tidysdm)
 
 #load data
-#load("ProcessedData/m1.1.Rdata")
+#load("ProcessedData/m1.1_ambon.Rdata")
 load("ProcessedData/detect_data_list_ambon.Rdata")
-#load("ProcessedData/m1.0.Rdata")
+#load("ProcessedData/m1.0_ambon.Rdata")
 
 ### m1.0 AUC and TSS -----------------------------------------------------------
 set.seed(1234)
@@ -120,4 +120,4 @@ rm(m1.0train, m1.0_TSS_list, TSS_df, AUC_df, roc_object,
    detect_data_train, detect_data_test, detect_data_AUC,
    m1.0_AUC_list, i, j, k, lower, upper, threshold)
 
-save(m1.0_AUC_df, m1.0_TSS_df, m1.0_TSS_plot, file = "ProcessedData/m1.0_performance.Rdata")
+save(m1.0_AUC_df, m1.0_TSS_df, m1.0_TSS_plot, file = "ProcessedData/m1.0_performance_ambon.Rdata")

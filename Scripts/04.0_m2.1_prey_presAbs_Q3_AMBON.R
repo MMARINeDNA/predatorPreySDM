@@ -16,7 +16,7 @@ library(mgcv)
 library(MuMIn)
 
 load("ProcessedData/detect_data_list_ambon.Rdata")
-load("ProcessedData/m1.1.Rdata")
+load("ProcessedData/m1.1_ambon.Rdata")
 
 ### Wrangle prey data to Genus? Add pres/absence columns? Select target prey species?
 
