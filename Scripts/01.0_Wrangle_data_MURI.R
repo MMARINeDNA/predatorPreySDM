@@ -136,7 +136,7 @@ detect_data_muri <- detect_data_muri %>%
   mutate(lat_deg = lat, lon_deg = lon) %>% 
   st_as_sf(coords = c("lon", "lat"), crs = 4326) %>% 
   st_transform(32610) %>% 
-  mutate(utm.lon = st_coordinates(.)[1], utm.lat = st_coordinates(.)[2])
+  mutate(utm.lon = st_coordinates(.)[, 1], utm.lat = st_coordinates(.)[, 2])
 
 ## count number of marine mammal detections by species -------------------------
 
@@ -157,3 +157,31 @@ detect_per_species_station <- detect_data %>%
 save(detect_data_muri, detect_per_species, 
      file = "ProcessedData/detect_data_muri.Rdata")
 
+### Summary of species in dataset ----------------------------------------------
+# detection frequency (N samples/site) for each species 
+# to see what is common in the dataset, to inform pred-prey interactions
+
+detect_freq_muri <- detect_data_muri %>%
+  sf::st_drop_geometry() %>%
+  pivot_longer(`Agonidae`:`Zoarcidae`, names_to = "species_detected", values_to = "reads") %>%
+  mutate(genus = word(species_detected, 1),          
+         site = paste(station, depth, sep = "_"),
+         samp_rep = paste(NWFSCsampleID, techRep, sep = "_")) %>%
+  group_by(genus) %>%
+  summarise(n_samples = n_distinct(samp_rep[reads > 0]),
+            n_sites   = n_distinct(site[reads > 0]),
+            total_samples = n_distinct(samp_rep),
+            total_sites = n_distinct(site),
+            pct_samples = round(100 * n_samples / total_samples, 1),
+            pct_sites   = round(100 * n_sites   / total_sites,   1),
+            .groups = "drop") %>%
+  arrange(desc(n_sites)) %>%
+  print(n = Inf)
+
+detect_freq_muri %>%
+  filter(n_samples > 0) %>%
+  ggplot(aes(pct_sites)) +
+  geom_histogram(binwidth = 5) +
+  geom_vline(xintercept = c(5, 10, 20), linetype = "dashed")
+
+save(detect_freq_muri, file = "./ProcessedData/detect_freq_muri.Rdata")

@@ -1,0 +1,146 @@
+proj,predator,prey_genus,ancombc_x,ancombc_sig,in_dataset,pct_sites,reference,notes
+AMBON,Odobenus rosmarus,Acantholumpenus,0,0,0,NA,Maniscalco et al. 2019,Bristol Bay
+AMBON,Phocoena phocoena,Cymatogaster,0,0,0,NA,Nichol et al. 2013,Salish Sea
+AMBON,Phocoena phocoena,Engraulis,0,0,0,NA,"Sekiguchi 1995, Nichol et al. 2013","California, Salish Sea"
+AMBON,Odobenus rosmarus,Eumesogrammus,0,0,0,NA,Maniscalco et al. 2019,Bristol Bay
+AMBON,Odobenus rosmarus,Microstomus,0,0,0,NA,Maniscalco et al. 2019,Bristol Bay
+AMBON,Odobenus rosmarus,Parophrys,0,0,0,NA,Maniscalco et al. 2019,Bristol Bay
+AMBON,Erignathus barbatus,Pleuronectidae,0,0,0,NA,Quakenbush et al. 2011; Crawford et al. 2015,Alaska
+AMBON,Pusa hispida,Pleuronectidae,0,0,0,NA,Quakenbush et al. 2011,Alaska
+AMBON,Eschrichtius robustus,Sardinops,0,0,0,NA,Webber et al. 2024,
+AMBON,Phocoena phocoena,Sardinops,0,0,0,NA,Nichol et al. 2013,Salish Sea
+AMBON,Erignathus barbatus,Gadus,0,0,1,70,Crawford et al. 2015,Alaska; Gadidae
+AMBON,Phocoena phocoena,Gadus,0,0,1,70,,
+AMBON,Pusa hispida,Gadus,0,0,1,70,Crawford et al. 2015,Alaska; Gadidae
+AMBON,Erignathus barbatus,Theragra,0,0,0,70,Quakenbush et al. 2011,Alaska
+AMBON,Pusa hispida,Theragra,0,0,0,70,Quakenbush et al. 2011,Alaska
+AMBON,Erignathus barbatus,Ammodytes,1,0,1,53.3,Quakenbush et al. 2011,Alaska
+AMBON,Odobenus rosmarus,Ammodytes,1,1,1,53.3,Maniscalco et al. 2019,Bristol Bay
+AMBON,Phocoena phocoena,Ammodytes,1,1,1,53.3,,
+AMBON,Pusa hispida,Ammodytes,0,0,1,53.3,Quakenbush et al. 2011,Alaska
+AMBON,Erignathus barbatus,Clupea,0,0,1,32.7,Quakenbush et al. 2011; Crawford et al. 2015,Alaska
+AMBON,Odobenus rosmarus,Clupea,1,1,1,32.7,,
+AMBON,Phocoena phocoena,Clupea,1,0,1,32.7,"Nichol et al. 2013, Fontaine et al. 1994","Salish Sea, Gulf of St Lawrence"
+AMBON,Pusa hispida,Clupea,1,1,1,32.7,Quakenbush et al. 2011; Crawford et al. 2015,Alaska
+AMBON,Erignathus barbatus,Boreogadus,1,1,1,26,Quakenbush et al. 2011; Crawford et al. 2015,Alaska
+AMBON,Eschrichtius robustus,Boreogadus,1,1,1,26,,
+AMBON,Odobenus rosmarus,Boreogadus,1,1,1,26,,
+AMBON,Phocoena phocoena,Boreogadus,1,1,1,26,,
+AMBON,Pusa hispida,Boreogadus,0,0,1,26,Quakenbush et al. 2011; Crawford et al. 2015,Alaska
+AMBON,Erignathus barbatus,Liparis,0,0,1,24.7,Quakenbush et al. 2011; Crawford et al. 2015,Alaska
+AMBON,Eschrichtius robustus,Oncorhynchus,1,0,1,19.3,,
+AMBON,Odobenus rosmarus,Oncorhynchus,1,0,1,19.3,,
+AMBON,Phocoena phocoena,Oncorhynchus,1,0,1,19.3,,
+AMBON,Erignathus barbatus,Lycodes,0,0,1,18,Quakenbush et al. 2011,Alaska
+AMBON,Pusa hispida,Lycodes,0,0,1,18,Quakenbush et al. 2011,Alaska
+AMBON,Erignathus barbatus,Mallotus,0,0,1,14,,Alaska
+AMBON,Odobenus rosmarus,Mallotus,1,0,1,14,,
+AMBON,Phocoena phocoena,Mallotus,1,0,1,14,Fontaine et al. 1994,Gulf of St Lawrence
+AMBON,Pusa hispida,Mallotus,0,0,1,14,Quakenbush et al. 2011,Alaska
+AMBON,Odobenus rosmarus,Anisarchus,1,0,1,12.7,Maniscalco et al. 2019,Bristol Bay
+AMBON,Erignathus barbatus,Eleginus,1,0,1,11.3,Quakenbush et al. 2011; Crawford et al. 2015,Alaska
+AMBON,Odobenus rosmarus,Eleginus,1,0,1,11.3,,
+AMBON,Phocoena phocoena,Eleginus,0,0,1,11.3,,
+AMBON,Pusa hispida,Eleginus,0,0,1,11.3,Quakenbush et al. 2011,Alaska
+AMBON,Erignathus barbatus,Gymnocanthus,0,0,1,11.3,Quakenbush et al. 2011,Alaska
+AMBON,Odobenus rosmarus,Gymnocanthus,1,0,1,11.3,,
+AMBON,Phocoena phocoena,Gymnocanthus,1,1,1,11.3,,
+AMBON,Pusa hispida,Gymnocanthus,1,0,1,11.3,Quakenbush et al. 2011,Alaska
+AMBON,Erignathus barbatus,Myoxocephalus,0,0,1,8,Quakenbush et al. 2011,Alaska
+AMBON,Pusa hispida,Myoxocephalus,0,0,1,8,Quakenbush et al. 2011,Alaska
+AMBON,Phocoena phocoena,Sebastes,0,0,1,3.3,"Sekiguchi 1995, Walker et al.1998, Fontaine et al. 1994",California; juvenile rockfish
+AMBON,Odobenus rosmarus,Lumpenus,0,0,1,2,Maniscalco et al. 2019,Bristol Bay
+AMBON,Pusa hispida,Lumpenus,0,0,1,2,Quakenbush et al. 2011,Alaska
+AMBON,Erignathus barbatus,Enophrys,0,0,1,0.7,Quakenbush et al. 2011,Alaska
+AMBON,Erignathus barbatus,Osmerus,0,0,1,0.7,Quakenbush et al. 2011,Alaska
+AMBON,Eschrichtius robustus,Osmerus,0,0,1,0.7,Webber et al. 2024,
+AMBON,Pusa hispida,Osmerus,0,0,1,0.7,Quakenbush et al. 2011,Alaska
+MURI,Phocoena phocoena,Citharichthys,0,0,1,29.6,,
+MURI,Lagenorhynchus obliquidens,Clupea,1,0,1,19.9,NOAA website,
+MURI,Megaptera novaeangliae,Clupea,1,0,1,19.9,"Fleming et al. 2016, Robinson et al. 2025",California
+MURI,Mirounga angustirostris,Clupea,1,0,1,19.9,,
+MURI,Phocoena phocoena,Clupea,1,1,1,19.9,"Nichol et al. 2013, Walker et al.1998",Salish Sea
+MURI,Zalophus californianus,Clupea,1,0,1,19.9,,California
+MURI,Berardius bairdii,Cololabis,0,0,1,13.7,,
+MURI,Lagenorhynchus obliquidens,Cololabis,0,0,1,13.7,Hiroshi et al. 1980,California
+MURI,Lagenorhynchus obliquidens,Cololabis,1,0,1,13.7,Hiroshi et al. 1980,
+MURI,Megaptera novaeangliae,Cololabis,1,0,1,13.7,,
+MURI,Mirounga angustirostris,Cololabis,1,0,1,13.7,,
+MURI,Phocoena phocoena,Cololabis,1,0,1,13.7,,
+MURI,Zalophus californianus,Cololabis,1,0,1,13.7,,
+MURI,Berardius bairdii,Coryphaenoides,0,0,0,NA,"Walker et al. 2022, Ohizumi et al. 2003",Japan
+MURI,Mirounga angustirostris,Coryphaenoides,0,0,0,NA,Antonelis et al. 1987,
+MURI,Phocoena phocoena,Cymatogaster,0,0,0,NA,Nichol et al. 2013,Salish Sea
+MURI,Mirounga angustirostris,Diaphus,0,0,1,56.4,Goetsch et al. 2018,NE Pacific
+MURI,Berardius bairdii,Engraulis,0,0,1,37.8,Ohizumi et al. 2003,Japan
+MURI,Lagenorhynchus obliquidens,Engraulis,1,1,1,37.8,Hiroshi et al. 1980,California
+MURI,Megaptera novaeangliae,Engraulis,1,1,1,37.8,"Fleming et al. 2016, Markowitz et al. 2024",California
+MURI,Mirounga angustirostris,Engraulis,1,1,1,37.8,,
+MURI,Phocoena phocoena,Engraulis,1,1,1,37.8,"Sekiguchi 1995, Nichol et al. 2013","California, Salish Sea"
+MURI,Zalophus californianus,Engraulis,1,1,1,37.8,Lowry et al. 2022,California
+MURI,Berardius bairdii,Laemonema,0,0,0,NA,Walker et a. 2022,Japan
+MURI,Lagenorhynchus obliquidens,Lipolagus,1,0,1,15.4,,
+MURI,Megaptera novaeangliae,Lipolagus,1,0,1,15.4,,
+MURI,Mirounga angustirostris,Lipolagus,1,0,1,15.4,Goetsch et al. 2018,NE Pacific
+MURI,Phocoena phocoena,Lipolagus,1,0,1,15.4,,
+MURI,Zalophus californianus,Lipolagus,1,0,1,15.4,,
+MURI,Berardius bairdii,Merluccius,0,0,1,80.6,,
+MURI,Lagenorhynchus obliquidens,Merluccius,1,1,1,80.6,Hiroshi et al. 1980,California
+MURI,Megaptera novaeangliae,Merluccius,1,1,1,80.6,Moreaux et al. 2025,Canada
+MURI,Mirounga angustirostris,Merluccius,1,1,1,80.6,,
+MURI,Phocoena phocoena,Merluccius,1,1,1,80.6,"Nichol et al. 2013, Walker et al.1998",Salish Sea
+MURI,Zalophus californianus,Merluccius,1,1,1,80.6,Lowry et al. 2022,California
+MURI,Lagenorhynchus obliquidens,Nannobrachium,1,0,1,14.4,,
+MURI,Megaptera novaeangliae,Nannobrachium,1,0,1,14.4,,
+MURI,Mirounga angustirostris,Nannobrachium,1,1,1,14.4,Goetsch et al. 2018,NE Pacific
+MURI,Phocoena phocoena,Nannobrachium,1,0,1,14.4,,
+MURI,Zalophus californianus,Nannobrachium,1,0,1,14.4,,
+MURI,Lagenorhynchus obliquidens,Oncorhynchus,1,0,1,10.1,Hiroshi et al. 1980,Washington
+MURI,Megaptera novaeangliae,Oncorhynchus,1,0,1,10.1,,
+MURI,Mirounga angustirostris,Oncorhynchus,1,0,1,10.1,,
+MURI,Phocoena phocoena,Oncorhynchus,1,0,1,10.1,,
+MURI,Zalophus californianus,Oncorhynchus,1,0,1,10.1,,California
+MURI,Lagenorhynchus obliquidens,Pseudobathylagus,1,0,1,12.3,,
+MURI,Megaptera novaeangliae,Pseudobathylagus,1,0,1,12.3,,
+MURI,Mirounga angustirostris,Pseudobathylagus,1,1,1,12.3,Goetsch et al. 2018,NE Pacific
+MURI,Phocoena phocoena,Pseudobathylagus,1,0,1,12.3,,
+MURI,Zalophus californianus,Pseudobathylagus,1,0,1,12.3,,
+MURI,Berardius bairdii,Sardinops,0,0,1,47.2,Nishiwaki & Oguro 1971,Japan
+MURI,Lagenorhynchus obliquidens,Sardinops,1,1,1,47.2,Hiroshi et al. 1980,California
+MURI,Megaptera novaeangliae,Sardinops,1,1,1,47.2,Fleming et al. 2016,California
+MURI,Mirounga angustirostris,Sardinops,1,1,1,47.2,,
+MURI,Phocoena phocoena,Sardinops,1,1,1,47.2,Nichol et al. 2013,"California, Salish Sea"
+MURI,Zalophus californianus,Sardinops,1,1,1,47.2,Lowry et al. 2022,California
+MURI,Berardius bairdii,Scomber,0,0,1,23.1,Nishiwaki & Oguro 1971,Japan
+MURI,Lagenorhynchus obliquidens,Scomber,1,0,1,23.1,Hiroshi et al. 1980,Japan
+MURI,Megaptera novaeangliae,Scomber,1,0,1,23.1,,
+MURI,Mirounga angustirostris,Scomber,1,0,1,23.1,,
+MURI,Phocoena phocoena,Scomber,1,0,1,23.1,,California
+MURI,Zalophus californianus,Scomber,1,0,1,23.1,Lowry et al. 2022,California
+MURI,Lagenorhynchus obliquidens,Sebastes,0,0,1,43.8,,
+MURI,Megaptera novaeangliae,Sebastes,0,0,1,43.8,,
+MURI,Phocoena phocoena,Sebastes,0,0,1,43.8,"Sekiguchi 1995, Walker et al.1998",California; juvenile rockfish
+MURI,Zalophus californianus,Sebastes,0,0,1,43.8,Lowry et al. 2022,California
+MURI,Mirounga angustirostris,Stenobrachius,0,0,1,55.6,Goetsch et al. 2018,NE Pacific
+MURI,Lagenorhynchus obliquidens,Symbolophorus,1,0,1,15.2,,
+MURI,Megaptera novaeangliae,Symbolophorus,1,0,1,15.2,,
+MURI,Mirounga angustirostris,Symbolophorus,1,0,1,15.2,Goetsch et al. 2018,NE Pacific
+MURI,Phocoena phocoena,Symbolophorus,1,0,1,15.2,,
+MURI,Zalophus californianus,Symbolophorus,1,0,1,15.2,,
+MURI,Lagenorhynchus obliquidens,Tactostoma,1,0,1,20.5,,
+MURI,Megaptera novaeangliae,Tactostoma,1,0,1,20.5,,
+MURI,Mirounga angustirostris,Tactostoma,1,0,1,20.5,Goetsch et al. 2018,NE Pacific
+MURI,Phocoena phocoena,Tactostoma,1,0,1,20.5,,
+MURI,Zalophus californianus,Tactostoma,1,0,1,20.5,,
+MURI,Mirounga angustirostris,Tarletonbeania,0,0,1,58.6,Goetsch et al. 2018,NE Pacific
+MURI,Phocoena phocoena,Thaleichthys,0,0,1,5.3,Walker et al.1998,
+MURI,Lagenorhynchus obliquidens,Thunnus,1,0,1,9.9,,
+MURI,Megaptera novaeangliae,Thunnus,1,0,1,9.9,,
+MURI,Mirounga angustirostris,Thunnus,1,0,1,9.9,,
+MURI,Phocoena phocoena,Thunnus,1,0,1,9.9,,
+MURI,Zalophus californianus,Thunnus,1,0,1,9.9,,
+MURI,Lagenorhynchus obliquidens,Trachurus,1,1,1,53.1,Hiroshi et al. 1980,California
+MURI,Megaptera novaeangliae,Trachurus,1,1,1,53.1,,
+MURI,Mirounga angustirostris,Trachurus,1,1,1,53.1,,
+MURI,Phocoena phocoena,Trachurus,1,1,1,53.1,,
+MURI,Zalophus californianus,Trachurus,1,1,1,53.1,Lowry et al. 2022,California

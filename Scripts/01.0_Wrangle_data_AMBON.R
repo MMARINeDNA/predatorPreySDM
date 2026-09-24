@@ -92,3 +92,33 @@ detect_data_ambon <- read.csv("./data/AMBON/ASVtable.csv") %>%
   st_drop_geometry()
 
 save(detect_data_ambon, metadata, file = "./ProcessedData/detect_data_ambon.Rdata")
+
+### Summary of species in dataset ----------------------------------------------
+# detection frequency (N samples/site) for each species 
+# to see what is common in the dataset, to inform pred-prey interactions
+
+detect_freq_ambon <- detect_data_ambon %>%
+  filter(samp_category == "sample") %>%
+  pivot_longer(`Acipenser baerii`:`Xiphister  spp.`, names_to = "species_detected", values_to = "reads") %>%
+  mutate(genus_detected = word(species_detected, 1),          
+         site = paste(decimalLatitude, decimalLongitude, collection_depth, sep = "_"),
+         samp_rep = paste(sample, rep, sep = "_")) %>%
+  group_by(genus_detected) %>%
+  summarise(n_samples = n_distinct(samp_rep[reads > 0]),
+            n_sites   = n_distinct(site[reads > 0]),
+            total_samples = n_distinct(samp_rep),
+            total_sites = n_distinct(site),
+            pct_samples = round(100 * n_samples / total_samples, 1),
+            pct_sites   = round(100 * n_sites   / total_sites,   1),
+            .groups = "drop") %>%
+  arrange(desc(n_sites)) %>%
+  print(n = Inf)
+
+detect_freq_ambon %>%
+  filter(n_samples > 0) %>%
+  ggplot(aes(pct_sites)) +
+  geom_histogram(binwidth = 5) +
+  geom_vline(xintercept = c(5, 10, 20), linetype = "dashed")
+
+save(detect_freq_ambon, file = "./ProcessedData/detect_freq_ambon.Rdata")
+  
