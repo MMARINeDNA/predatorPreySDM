@@ -100,10 +100,10 @@ save(detect_data_ambon, metadata, file = "./ProcessedData/detect_data_ambon.Rdat
 detect_freq_ambon <- detect_data_ambon %>%
   filter(samp_category == "sample") %>%
   pivot_longer(`Acipenser baerii`:`Xiphister  spp.`, names_to = "species_detected", values_to = "reads") %>%
-  mutate(genus_detected = word(species_detected, 1),          
+  mutate(taxon = word(species_detected, 1),          
          site = paste(decimalLatitude, decimalLongitude, collection_depth, sep = "_"),
          samp_rep = paste(sample, rep, sep = "_")) %>%
-  group_by(genus_detected) %>%
+  group_by(taxon) %>%
   summarise(n_samples = n_distinct(samp_rep[reads > 0]),
             n_sites   = n_distinct(site[reads > 0]),
             total_samples = n_distinct(samp_rep),
@@ -120,5 +120,15 @@ detect_freq_ambon %>%
   geom_histogram(binwidth = 5) +
   geom_vline(xintercept = c(5, 10, 20), linetype = "dashed")
 
+tax <- classification(unique(detect_freq_ambon$taxon), db = "ncbi")
+
+tax_df <- do.call(rbind, lapply(names(tax), \(nm) {
+  x <- tax[[nm]]
+  data.frame(taxon = nm, family = x$name[x$rank == "family"][1], order = x$name[x$rank == "order"][1])}))
+
+detect_freq_ambon <- detect_freq_ambon %>%
+  left_join(tax_df, by = "taxon")
+
+# write_csv(detect_freq_ambon, "Data/detect_freq_ambon.csv")
 save(detect_freq_ambon, file = "./ProcessedData/detect_freq_ambon.Rdata")
   

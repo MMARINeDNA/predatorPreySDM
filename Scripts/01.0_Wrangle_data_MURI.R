@@ -5,6 +5,9 @@
 
 library(tidyverse)
 library(sf)
+library(taxize)
+library(dplyr)
+
 
 ## Get data --------------------------------------------------------------------
 
@@ -107,10 +110,12 @@ detect_data %>% group_by(station) %>% n_groups() #177 station
 detect_data %>% group_by(depth, station) %>% n_groups() #527 station/depths
 
 ## Remove Delphinidae family ---------------------------------------------------
+
 detect_data <- detect_data %>% 
   filter(!(BestTaxon %in% c('Delphinidae')))
 
 ## Filter to only perfect match classes ----------------------------------------  
+
 detect_data <- detect_data %>%
   filter(Class %in% c("Actinopteri", "Mammalia", "Chondrichthyes"))
 
@@ -157,17 +162,15 @@ detect_per_species_station <- detect_data %>%
 save(detect_data_muri, detect_per_species, 
      file = "ProcessedData/detect_data_muri.Rdata")
 
-### Summary of species in dataset ----------------------------------------------
-# detection frequency (N samples/site) for each species 
-# to see what is common in the dataset, to inform pred-prey interactions
+## Summary of species across sites and samples to inform pred-prey -------------
 
 detect_freq_muri <- detect_data_muri %>%
   sf::st_drop_geometry() %>%
   pivot_longer(`Agonidae`:`Zoarcidae`, names_to = "species_detected", values_to = "reads") %>%
-  mutate(genus = word(species_detected, 1),          
+  mutate(taxon = word(species_detected, 1),          
          site = paste(station, depth, sep = "_"),
          samp_rep = paste(NWFSCsampleID, techRep, sep = "_")) %>%
-  group_by(genus) %>%
+  group_by(taxon) %>%
   summarise(n_samples = n_distinct(samp_rep[reads > 0]),
             n_sites   = n_distinct(site[reads > 0]),
             total_samples = n_distinct(samp_rep),
@@ -184,4 +187,14 @@ detect_freq_muri %>%
   geom_histogram(binwidth = 5) +
   geom_vline(xintercept = c(5, 10, 20), linetype = "dashed")
 
+tax <- classification(unique(detect_freq_muri$taxon), db = "ncbi")
+
+tax_df <- do.call(rbind, lapply(names(tax), \(nm) {
+  x <- tax[[nm]]
+  data.frame(taxon = nm, family = x$name[x$rank == "family"][1], order = x$name[x$rank == "order"][1])}))
+
+detect_freq_muri <- detect_freq_muri %>%
+  left_join(tax_df, by = "taxon")
+
+# write_csv(detect_freq_muri, "Data/detect_freq_muri.csv")
 save(detect_freq_muri, file = "./ProcessedData/detect_freq_muri.Rdata")
